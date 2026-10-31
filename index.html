@@ -3,35 +3,58 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>JetX Signal Bot 3.0</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JetX Signal Bot 4.0</title>
 <style>
 *{box-sizing:border-box}
-body{margin:0;padding:18px;background:#08111f;color:#f4f6fb;font-family:Arial,sans-serif}
+body{margin:0;padding:16px;background:#08111f;color:#f4f6fb;font-family:Arial,sans-serif}
 main{max-width:950px;margin:auto}
-h1{color:#ffd43b;text-align:center}
+h1{text-align:center;color:#ffd43b}
 h2{color:#ffd43b;font-size:19px}
 .card{background:#121f32;border:1px solid #263952;border-radius:13px;padding:16px;margin:14px 0}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:10px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
 .stat{background:#1b2b42;border-radius:10px;padding:12px;text-align:center}
-.stat strong{display:block;font-size:23px;color:#ffd43b;margin-top:7px}
+.stat strong{display:block;font-size:22px;color:#ffd43b;margin-top:7px}
 input,button{padding:12px;border-radius:8px;border:0;font-size:15px}
 input{background:#fff;color:#111;width:100%;margin:5px 0}
 button{background:#ffd43b;color:#151515;font-weight:bold;cursor:pointer;margin:4px 2px}
-button.secondary{background:#314660;color:white}
-button.danger{background:#a93636;color:white}
+.secondary{background:#314660;color:white}
+.danger{background:#a93636;color:white}
 .row{display:flex;gap:8px;flex-wrap:wrap}
 .row input{flex:1;min-width:130px}
-canvas{width:100%;height:220px;background:#0b1728;border-radius:8px}
-li{padding:7px;border-bottom:1px solid #263952}
 .small{color:#aebbd0;font-size:13px;line-height:1.5}
 .alert{background:#26344a;padding:12px;border-radius:9px;line-height:1.5}
+canvas{width:100%;height:220px;background:#0b1728;border-radius:8px}
+li{padding:7px;border-bottom:1px solid #263952}
+.hidden{display:none}
+.status{padding:10px;background:#1b2b42;border-radius:8px;font-size:13px}
 </style>
 </head>
 <body>
 <main>
-<h1>🚀 JETX SIGNAL BOT 3.0</h1>
-<p class="small" style="text-align:center">Panel de estadísticas y seguimiento de resultados</p>
+<h1>🚀 JETX SIGNAL BOT 4.0</h1>
+<p class="small" style="text-align:center">Estadísticas y sincronización en la nube</p>
+
+<div class="card" id="loginPanel">
+<h2>Acceso a tu cuenta</h2>
+<p class="small">Inicia sesión con el correo y la contraseña que registraste en Supabase.</p>
+<input id="email" type="email" placeholder="Tu correo electrónico" autocomplete="email">
+<input id="password" type="password" placeholder="Tu contraseña" autocomplete="current-password">
+<button onclick="login()">INICIAR SESIÓN</button>
+<div id="loginMessage" class="alert">Ingresa tus datos para acceder.</div>
+</div>
+
+<div id="app" class="hidden">
+<div class="card">
+<div class="row" style="justify-content:space-between;align-items:center">
+<div>
+<strong>Cuenta conectada</strong>
+<div class="small" id="account"></div>
+</div>
+<button class="secondary" onclick="logout()">CERRAR SESIÓN</button>
+</div>
+<p class="status" id="cloudStatus">Conectando...</p>
+</div>
 
 <div class="card">
 <h2>Registrar multiplicador</h2>
@@ -39,7 +62,7 @@ li{padding:7px;border-bottom:1px solid #263952}
 <input id="multiplier" type="number" min="1" step="0.01" placeholder="Ejemplo: 2.45">
 <button onclick="addResult()">REGISTRAR</button>
 </div>
-<p class="small">Registra el multiplicador que apareció en cada ronda.</p>
+<p class="small">Los resultados se guardarán en tu cuenta de la nube.</p>
 </div>
 
 <div class="card">
@@ -69,8 +92,7 @@ li{padding:7px;border-bottom:1px solid #263952}
 
 <div class="card">
 <h2>Detector de rachas</h2>
-<div class="alert" id="streak">Registra resultados para analizar las rachas.</div>
-<p class="small">Una racha describe una secuencia pasada. No permite anticipar el resultado siguiente.</p>
+<div class="alert" id="streak">Esperando resultados.</div>
 </div>
 
 <div class="card">
@@ -80,106 +102,214 @@ li{padding:7px;border-bottom:1px solid #263952}
 <div class="stat">Últimas 20<strong id="p20">Sin datos</strong></div>
 <div class="stat">Últimas 50<strong id="p50">Sin datos</strong></div>
 </div>
-<p class="small">Se muestra el promedio de cada período, siempre que existan suficientes registros.</p>
 </div>
 
 <div class="card">
 <h2>Observación estadística</h2>
-<div class="alert" id="observation">Necesitas al menos 10 resultados para generar una observación.</div>
+<div class="alert" id="observation">Registra al menos 10 resultados.</div>
 </div>
 
 <div class="card">
-<h2>Historial de resultados</h2>
+<h2>Historial</h2>
 <div class="row">
 <button class="secondary" onclick="undo()">DESHACER ÚLTIMO</button>
 <button class="secondary" onclick="exportCSV()">EXPORTAR CSV</button>
 <button class="secondary" onclick="backup()">RESPALDAR JSON</button>
 <button class="secondary" onclick="document.getElementById('file').click()">IMPORTAR JSON</button>
 <input id="file" type="file" accept=".json,application/json" style="display:none" onchange="restore(event)">
-<button class="danger" onclick="clearAll()">BORRAR HISTORIAL</button>
 </div>
 <ol id="history"></ol>
 </div>
 
 <div class="card">
-<p class="small"><b>Nota:</b> esta herramienta organiza y describe resultados anteriores. No conoce el algoritmo del juego ni predice rondas futuras. No uses sus estadísticas como garantía para apostar.</p>
+<p class="small">Tus datos se guardan en Supabase y se consultan al iniciar sesión desde otro dispositivo. Mantén tus respaldos. Las estadísticas describen resultados anteriores y no predicen la siguiente ronda ni garantizan ganancias.</p>
+</div>
 </div>
 </main>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
+const SUPABASE_URL = "https://wkjnpymevqxuoidxocqw.supabase.co/rest/v1/";
+const SUPABASE_KEY = "sb_publishable_wKM4jjqJf9dAy8f0HGNQoA_zdW54br-";
+
+const client = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_KEY
+);
+
 const STORAGE_KEY = "jetxResults";
 let results = [];
+let cloudRows = [];
+let currentUser = null;
+let busy = false;
 
-try {
- const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
- if (Array.isArray(saved)) results = saved.filter(x => Number.isFinite(Number(x)) && Number(x) >= 1).map(Number);
-} catch(e) { results = []; }
-
-function save(){
- localStorage.setItem(STORAGE_KEY, JSON.stringify(results));
- render();
+function message(text){
+ document.getElementById("loginMessage").textContent = text;
 }
 
-function addResult(){
- const input = document.getElementById("multiplier");
- const value = Number(input.value);
- if(!input.value || !Number.isFinite(value) || value < 1){
-  alert("Ingresa un multiplicador válido, igual o mayor a 1.");
+function cloudMessage(text){
+ document.getElementById("cloudStatus").textContent = text;
+}
+
+async function login(){
+ if(busy)return;
+ const email=document.getElementById("email").value.trim();
+ const password=document.getElementById("password").value;
+ if(!email || !password){
+  message("Escribe tu correo y contraseña.");
   return;
  }
- results.push(Number(value.toFixed(2)));
- input.value = "";
- save();
+ busy=true;
+ message("Comprobando acceso...");
+ try{
+  const {data,error}=await client.auth.signInWithPassword({email,password});
+  if(error)throw error;
+  await startApp(data.user);
+ }catch(e){
+  message("No se pudo iniciar sesión: "+e.message);
+ }finally{
+  busy=false;
+ }
 }
 
-document.getElementById("multiplier").addEventListener("keydown", e => {
- if(e.key === "Enter") addResult();
+async function logout(){
+ await client.auth.signOut();
+ currentUser=null;
+ results=[];
+ cloudRows=[];
+ document.getElementById("app").classList.add("hidden");
+ document.getElementById("loginPanel").classList.remove("hidden");
+ message("Sesión cerrada.");
+}
+
+async function startApp(user){
+ currentUser=user;
+ document.getElementById("account").textContent=user.email;
+ document.getElementById("loginPanel").classList.add("hidden");
+ document.getElementById("app").classList.remove("hidden");
+ cloudMessage("Consultando resultados en la nube...");
+ await loadCloud();
+}
+
+async function loadCloud(){
+ if(!currentUser)return;
+ cloudMessage("Cargando historial...");
+ const {data,error}=await client
+  .from("jetx_results")
+  .select("id,user_id,multiplier,created_at")
+  .eq("user_id",currentUser.id)
+  .order("created_at",{ascending:true})
+  .limit(1000);
+
+ if(error){
+  cloudMessage("Error al consultar la nube: "+error.message);
+  return;
+ }
+
+ cloudRows=data||[];
+
+ // Conserva una copia local antes de sustituir el historial del navegador.
+ const local = readLocal();
+ if(cloudRows.length===0 && local.length>0){
+  cloudMessage("Importando historial local a la nube...");
+  const rows=local.map(value=>({
+   user_id:currentUser.id,
+   multiplier:value
+  }));
+  const {data:inserted,error:insertError}=await client
+   .from("jetx_results")
+   .insert(rows)
+   .select("id,user_id,multiplier,created_at");
+
+  if(insertError){
+   cloudMessage("No se pudo migrar el historial: "+insertError.message);
+   return;
+  }
+  cloudRows=inserted||[];
+ }else if(cloudRows.length>0 && local.length>0){
+  localStorage.setItem("jetxResults_backup_before_cloud",JSON.stringify(local));
+ }
+
+ results=cloudRows.map(row=>Number(row.multiplier));
+ localStorage.setItem(STORAGE_KEY,JSON.stringify(results));
+ render();
+ cloudMessage("Conectado. "+results.length+" resultados sincronizados.");
+}
+
+function readLocal(){
+ try{
+  const data=JSON.parse(localStorage.getItem(STORAGE_KEY)||"[]");
+  if(!Array.isArray(data))return [];
+  return data.map(Number).filter(v=>Number.isFinite(v)&&v>=1);
+ }catch(e){return [];}
+}
+
+async function addResult(){
+ if(busy)return;
+ const input=document.getElementById("multiplier");
+ const value=Number(input.value);
+ if(!input.value||!Number.isFinite(value)||value<1){
+  alert("Ingresa un multiplicador válido igual o mayor a 1.");
+  return;
+ }
+ busy=true;
+ cloudMessage("Guardando resultado...");
+ try{
+  const {data,error}=await client.from("jetx_results")
+   .insert({user_id:currentUser.id,multiplier:Number(value.toFixed(2))})
+   .select("id,user_id,multiplier,created_at")
+   .single();
+  if(error)throw error;
+  cloudRows.push(data);
+  results=cloudRows.map(row=>Number(row.multiplier));
+  localStorage.setItem(STORAGE_KEY,JSON.stringify(results));
+  input.value="";
+  render();
+  cloudMessage("Resultado guardado y sincronizado.");
+ }catch(e){
+  cloudMessage("No se pudo guardar: "+e.message);
+ }finally{
+  busy=false;
+ }
+}
+
+document.getElementById("multiplier").addEventListener("keydown",e=>{
+ if(e.key==="Enter")addResult();
 });
 
 function average(arr){
- if(!arr.length) return 0;
- return arr.reduce((a,b)=>a+b,0)/arr.length;
+ return arr.length?arr.reduce((a,b)=>a+b,0)/arr.length:0;
 }
-
 function percent(count,total){
- return total ? (count/total*100).toFixed(1)+"%" : "0%";
+ return total?(count/total*100).toFixed(1)+"%":"0%";
 }
-
 function periodText(n){
- if(results.length < n) return "Faltan "+(n-results.length);
- return average(results.slice(-n)).toFixed(2)+"x";
+ return results.length>=n?average(results.slice(-n)).toFixed(2)+"x":"Faltan "+(n-results.length);
 }
 
 function render(){
  const n=results.length;
  const lows=results.filter(x=>x<1.5).length;
  const highs=results.filter(x=>x>=2).length;
- const d1=lows;
- const d2=results.filter(x=>x>=1.5 && x<2).length;
- const d3=results.filter(x=>x>=2 && x<5).length;
- const d4=results.filter(x=>x>=5).length;
-
  document.getElementById("total").textContent=n;
  document.getElementById("average").textContent=average(results).toFixed(2)+"x";
  document.getElementById("low").textContent=percent(lows,n);
  document.getElementById("high").textContent=percent(highs,n);
- document.getElementById("d1").textContent=d1;
- document.getElementById("d2").textContent=d2;
- document.getElementById("d3").textContent=d3;
- document.getElementById("d4").textContent=d4;
-
+ document.getElementById("d1").textContent=lows;
+ document.getElementById("d2").textContent=results.filter(x=>x>=1.5&&x<2).length;
+ document.getElementById("d3").textContent=results.filter(x=>x>=2&&x<5).length;
+ document.getElementById("d4").textContent=results.filter(x=>x>=5).length;
  document.getElementById("p10").textContent=periodText(10);
  document.getElementById("p20").textContent=periodText(20);
  document.getElementById("p50").textContent=periodText(50);
 
  const history=document.getElementById("history");
  history.innerHTML="";
- results.slice(-30).forEach((v,i)=>{
+ cloudRows.slice(-50).reverse().forEach((row,i)=>{
   const li=document.createElement("li");
-  li.textContent=(results.length-Math.min(30,results.length)+i+1)+". "+v.toFixed(2)+"x";
+  li.textContent=Number(row.multiplier).toFixed(2)+"x";
   history.appendChild(li);
  });
-
  analyzeStreak();
  analyzeObservation();
  drawChart();
@@ -187,27 +317,28 @@ function render(){
 
 function analyzeStreak(){
  const box=document.getElementById("streak");
- if(!results.length){box.textContent="Registra resultados para analizar las rachas.";return;}
+ if(!results.length){box.textContent="Esperando resultados.";return;}
  const last=results[results.length-1];
- const type=last<2?"menores a 2x":"iguales o mayores a 2x";
  let count=0;
  for(let i=results.length-1;i>=0;i--){
-  if((results[i]<2) === (last<2)) count++;
+  if((results[i]<2)===(last<2))count++;
   else break;
  }
- box.textContent="La secuencia actual contiene "+count+" resultado(s) consecutivo(s) "+type+". Esto describe el historial y no predice la siguiente ronda.";
+ box.textContent="La secuencia actual contiene "+count+
+ " resultado(s) consecutivo(s) "+(last<2?"menores a 2x":"iguales o mayores a 2x")+
+ ". Describe el historial, no predice la siguiente ronda.";
 }
 
 function analyzeObservation(){
  const box=document.getElementById("observation");
  if(results.length<10){
-  box.textContent="Necesitas al menos 10 resultados para generar una observación.";
+  box.textContent="Registra al menos 10 resultados.";
   return;
  }
  const recent=results.slice(-10);
- const low=recent.filter(x=>x<1.5).length;
- const high=recent.filter(x=>x>=2).length;
- box.textContent="En las últimas 10 rondas registradas: "+low+" fueron menores a 1.50x y "+high+" fueron iguales o mayores a 2x. Es una descripción de esa muestra, no una señal de la próxima ronda.";
+ box.textContent="En las últimas 10 rondas: "+
+ recent.filter(x=>x<1.5).length+" fueron menores a 1.50x y "+
+ recent.filter(x=>x>=2).length+" fueron iguales o mayores a 2x. No es una predicción.";
 }
 
 function drawChart(){
@@ -229,9 +360,7 @@ function drawChart(){
  const data=results.slice(-60);
  const max=Math.max(5,...data);
  const step=(w-55)/Math.max(1,data.length);
- ctx.strokeStyle="#ffd43b";
- ctx.lineWidth=3;
- ctx.beginPath();
+ ctx.strokeStyle="#ffd43b";ctx.lineWidth=3;ctx.beginPath();
  data.forEach((v,i)=>{
   const x=40+i*step;
   const y=h-15-(v/max)*(h-35);
@@ -241,20 +370,28 @@ function drawChart(){
  ctx.fillText("Multiplicadores recientes (máximo visual: "+max.toFixed(2)+"x)",40,15);
 }
 
-function undo(){
- if(!results.length)return;
- results.pop();
- save();
-}
-
-function clearAll(){
- if(!confirm("¿Seguro que deseas borrar todos los resultados? Descarga un respaldo antes si deseas conservarlos."))return;
- results=[];
- save();
+async function undo(){
+ if(!cloudRows.length||busy)return;
+ if(!confirm("¿Eliminar el último resultado de tu historial en la nube?"))return;
+ busy=true;
+ const last=cloudRows[cloudRows.length-1];
+ const {error}=await client.from("jetx_results")
+  .delete().eq("id",last.id).eq("user_id",currentUser.id);
+ if(error){
+  cloudMessage("No se pudo eliminar: "+error.message);
+ }else{
+  cloudRows.pop();
+  results=cloudRows.map(row=>Number(row.multiplier));
+  localStorage.setItem(STORAGE_KEY,JSON.stringify(results));
+  render();
+  cloudMessage("Último resultado eliminado.");
+ }
+ busy=false;
 }
 
 function exportCSV(){
- const csv="numero,multiplicador\n"+results.map((v,i)=>(i+1)+","+v).join("\n");
+ const csv="numero,multiplicador,fecha\n"+
+ cloudRows.map((r,i)=>[i+1,r.multiplier,r.created_at].join(",")).join("\n");
  downloadFile("jetx-resultados.csv",csv,"text/csv");
 }
 
@@ -270,27 +407,36 @@ function downloadFile(name,content,type){
  URL.revokeObjectURL(url);
 }
 
-function restore(event){
+async function restore(event){
  const file=event.target.files[0];
  if(!file)return;
- const reader=new FileReader();
- reader.onload=()=>{
-  try{
-   const data=JSON.parse(reader.result);
-   if(!Array.isArray(data))throw new Error("Formato");
-   const clean=data.map(Number);
-   if(clean.some(x=>!Number.isFinite(x)||x<1))throw new Error("Datos");
-   if(!confirm("Se importarán "+clean.length+" resultados y se reemplazará el historial actual. ¿Continuar?"))return;
-   results=clean;
-   save();
-   alert("Respaldo importado correctamente.");
-  }catch(e){alert("No se pudo importar. Verifica que sea un respaldo JSON válido de JetX.");}
+ try{
+  const data=JSON.parse(await file.text());
+  if(!Array.isArray(data))throw new Error("Formato incorrecto");
+  const clean=data.map(Number);
+  if(clean.some(x=>!Number.isFinite(x)||x<1))throw new Error("Datos incorrectos");
+  if(!confirm("Se agregarán "+clean.length+" resultados a la nube. Si ya están guardados, podrían duplicarse. ¿Continuar?"))return;
+  cloudMessage("Importando respaldo...");
+  const rows=clean.map(value=>({user_id:currentUser.id,multiplier:value}));
+  const {error}=await client.from("jetx_results").insert(rows);
+  if(error)throw error;
+  await loadCloud();
+ }catch(e){
+  alert("No se pudo importar: "+e.message);
+ }finally{
   event.target.value="";
- };
- reader.readAsText(file);
+ }
 }
 
-render();
+async function init(){
+ const {data,error}=await client.auth.getSession();
+ if(error){
+  message(error.message);
+  return;
+ }
+ if(data.session)await startApp(data.session.user);
+}
+init();
 </script>
 </body>
 </html>
