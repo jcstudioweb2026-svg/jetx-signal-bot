@@ -1,0 +1,183 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#101827">
+<title>JetX Signal Bot</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#101827;color:#fff;font-family:Arial,sans-serif;padding:18px}
+header{text-align:center;padding:18px 0}
+h1{color:#f5c518;margin:5px}
+.sub{color:#9ba9bd;font-size:13px}
+.card{background:#1c293b;border-radius:14px;padding:16px;margin:14px 0}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat{background:#25344a;padding:14px;border-radius:10px}
+.stat small{color:#aab8cc}
+.stat strong{display:block;font-size:24px;margin-top:8px}
+input,select,button{width:100%;padding:14px;border-radius:9px;border:0;font-size:16px}
+input,select{background:#101827;color:white;margin:8px 0}
+button{background:#f5c518;color:#171717;font-weight:bold;cursor:pointer;margin-top:8px}
+.secondary{background:#34435a;color:white}
+.result{display:flex;justify-content:space-between;padding:10px;border-bottom:1px solid #34435a}
+.good{color:#55d98b}
+.warn{color:#ffd15c}
+.muted{color:#aab8cc;font-size:13px}
+</style>
+</head>
+<body>
+
+<header>
+<h1>✈ JETX SIGNAL BOT</h1>
+<div class="sub">ANÁLISIS Y ESTADÍSTICAS</div>
+</header>
+
+<div class="card">
+<h3>Panel de control</h3>
+<div class="grid">
+<div class="stat">
+<small>Rondas registradas</small>
+<strong id="total">0</strong>
+</div>
+<div class="stat">
+<small>Promedio</small>
+<strong id="average">—</strong>
+</div>
+<div class="stat">
+<small>Menores de 1.50x</small>
+<strong id="low">0%</strong>
+</div>
+<div class="stat">
+<small>Mayores de 2.00x</small>
+<strong id="high">0%</strong>
+</div>
+</div>
+</div>
+
+<div class="card">
+<h3>Registrar multiplicador</h3>
+<p class="muted">Introduce el resultado que acaba de aparecer en JetX.</p>
+<input id="multiplier" type="number" step="0.01" min="1" placeholder="Ejemplo: 2.45">
+<button onclick="addResult()">REGISTRAR RESULTADO</button>
+</div>
+
+<div class="card">
+<h3>Analizador estadístico</h3>
+<label class="muted">Cantidad de rondas que deseas analizar</label>
+<select id="window" onchange="render()">
+<option value="10">Últimas 10 rondas</option>
+<option value="20">Últimas 20 rondas</option>
+<option value="50">Últimas 50 rondas</option>
+<option value="100">Últimas 100 rondas</option>
+</select>
+<div id="analysis" class="muted">Esperando resultados...</div>
+</div>
+
+<div class="card">
+<h3>Historial de resultados</h3>
+<div id="history" class="muted">Todavía no hay registros.</div>
+<button class="secondary" onclick="undo()">DESHACER ÚLTIMO</button>
+<button class="secondary" onclick="exportData()">EXPORTAR HISTORIAL</button>
+</div>
+
+<div class="card">
+<h3>⚠ Información del sistema</h3>
+<p class="muted">Las estadísticas describen resultados pasados. No predicen la siguiente ronda ni garantizan ganancias. Las alertas son observaciones estadísticas, no recomendaciones de apuesta.</p>
+</div>
+
+<script>
+let results=[];
+try{
+results=JSON.parse(localStorage.getItem("jetxResults")||"[]");
+if(!Array.isArray(results))results=[];
+}catch(e){results=[];}
+
+function save(){
+localStorage.setItem("jetxResults",JSON.stringify(results));
+}
+
+function addResult(){
+const input=document.getElementById("multiplier");
+const value=Number(input.value);
+if(!Number.isFinite(value)||value<1){
+alert("Introduce un multiplicador válido.");
+return;
+}
+results.push(value);
+save();
+input.value="";
+render();
+}
+
+function undo(){
+if(results.length===0)return;
+results.pop();
+save();
+render();
+}
+
+function percent(n,total){
+return total?((n/total)*100).toFixed(1)+"%":"0%";
+}
+
+function render(){
+const total=results.length;
+const recent=results.slice(-Number(document.getElementById("window").value));
+const count=recent.length;
+const average=count?recent.reduce((a,b)=>a+b,0)/count:0;
+const low=recent.filter(x=>x<1.5).length;
+const high=recent.filter(x=>x>=2).length;
+const veryHigh=recent.filter(x=>x>=5).length;
+
+document.getElementById("total").textContent=total;
+document.getElementById("average").textContent=count?average.toFixed(2)+"x":"—";
+document.getElementById("low").textContent=percent(low,count);
+document.getElementById("high").textContent=percent(high,count);
+
+let streak=0;
+for(let i=recent.length-1;i>=0;i--){
+if(recent[i]<1.5)streak++;
+else break;
+}
+
+let html="";
+if(count===0){
+html="Registra resultados para comenzar.";
+}else{
+html=`
+<p>Rondas analizadas: <b>${count}</b></p>
+<p>Resultados menores de 1.50x: <b>${low}</b></p>
+<p>Resultados de 2.00x o más: <b>${high}</b></p>
+<p>Resultados de 5.00x o más: <b>${veryHigh}</b></p>
+<p>Racha actual inferior a 1.50x: <b>${streak}</b></p>
+<hr>
+<p class="warn">OBSERVACIÓN ESTADÍSTICA</p>
+<p>Se han registrado ${low} resultados inferiores a 1.50x en esta ventana.</p>
+<p class="muted">Este dato no permite anticipar el siguiente resultado.</p>`;
+}
+document.getElementById("analysis").innerHTML=html;
+
+document.getElementById("history").innerHTML=results.length?
+results.slice(-20).reverse().map((v,i)=>
+`<div class="result"><span>Ronda ${total-i}</span><b>${v.toFixed(2)}x</b></div>`
+).join(""):"Todavía no hay registros.";
+}
+
+function exportData(){
+const csv="Ronda,Multiplicador\n"+
+results.map((v,i)=>(i+1)+","+v).join("\n");
+const blob=new Blob([csv],{type:"text/csv"});
+const url=URL.createObjectURL(blob);
+const a=document.createElement("a");
+a.href=url;
+a.download="jetx-historial.csv";
+a.click();
+URL.revokeObjectURL(url);
+}
+
+render();
+</script>
+</body>
+</html>
