@@ -1,97 +1,101 @@
 
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#101827">
-<title>JetX Signal Bot</title>
+<title>JetX Signal Bot 2.0</title>
 <style>
 *{box-sizing:border-box}
-body{margin:0;background:#101827;color:#fff;font-family:Arial,sans-serif;padding:18px}
-header{text-align:center;padding:18px 0}
-h1{color:#f5c518;margin:5px}
-.sub{color:#9ba9bd;font-size:13px}
-.card{background:#1c293b;border-radius:14px;padding:16px;margin:14px 0}
+body{margin:0;background:#101827;color:#fff;font-family:Arial,sans-serif;padding:16px}
+header{text-align:center;padding:16px}
+h1{color:#f5c518;margin:5px;font-size:25px}
+.sub,.muted,small{color:#aab8cc}
+.card{background:#1c293b;padding:16px;border-radius:14px;margin:13px 0}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.stat{background:#25344a;padding:14px;border-radius:10px}
-.stat small{color:#aab8cc}
-.stat strong{display:block;font-size:24px;margin-top:8px}
-input,select,button{width:100%;padding:14px;border-radius:9px;border:0;font-size:16px}
-input,select{background:#101827;color:white;margin:8px 0}
-button{background:#f5c518;color:#171717;font-weight:bold;cursor:pointer;margin-top:8px}
+.stat{background:#29384d;padding:14px;border-radius:10px}
+.stat strong{display:block;font-size:23px;margin-top:8px;color:#f5c518}
+.stat small{font-size:12px}
+input,select,button{width:100%;padding:13px;border:0;border-radius:9px;font-size:15px;margin-top:8px}
+input,select{background:#101827;color:white}
+button{background:#f5c518;color:#151515;font-weight:bold;cursor:pointer}
 .secondary{background:#34435a;color:white}
-.result{display:flex;justify-content:space-between;padding:10px;border-bottom:1px solid #34435a}
-.good{color:#55d98b}
-.warn{color:#ffd15c}
-.muted{color:#aab8cc;font-size:13px}
+canvas{width:100%;height:190px}
+.result{display:flex;justify-content:space-between;padding:11px;border-bottom:1px solid #34435a}
+.badge{color:#f5c518;font-weight:bold}
+.alert{padding:12px;background:#29384d;border-radius:9px;margin-top:10px}
+footer{text-align:center;color:#8291a8;font-size:11px;padding:20px}
 </style>
 </head>
 <body>
 
 <header>
 <h1>✈ JETX SIGNAL BOT</h1>
-<div class="sub">ANÁLISIS Y ESTADÍSTICAS</div>
+<div class="sub">ANALYTICS SYSTEM · VERSION 2.0</div>
 </header>
 
 <div class="card">
-<h3>Panel de control</h3>
+<h3>📊 Panel de control</h3>
 <div class="grid">
-<div class="stat">
-<small>Rondas registradas</small>
-<strong id="total">0</strong>
-</div>
-<div class="stat">
-<small>Promedio</small>
-<strong id="average">—</strong>
-</div>
-<div class="stat">
-<small>Menores de 1.50x</small>
-<strong id="low">0%</strong>
-</div>
-<div class="stat">
-<small>Mayores de 2.00x</small>
-<strong id="high">0%</strong>
-</div>
+<div class="stat"><small>Total de rondas</small><strong id="total">0</strong></div>
+<div class="stat"><small>Promedio</small><strong id="average">—</strong></div>
+<div class="stat"><small>Menores de 1.50x</small><strong id="low">0%</strong></div>
+<div class="stat"><small>Mayores o iguales a 2x</small><strong id="high">0%</strong></div>
 </div>
 </div>
 
 <div class="card">
-<h3>Registrar multiplicador</h3>
-<p class="muted">Introduce el resultado que acaba de aparecer en JetX.</p>
-<input id="multiplier" type="number" step="0.01" min="1" placeholder="Ejemplo: 2.45">
+<h3>✍ Registrar multiplicador</h3>
+<input id="multiplier" type="number" min="1" step="0.01" placeholder="Ejemplo: 2.45">
 <button onclick="addResult()">REGISTRAR RESULTADO</button>
 </div>
 
 <div class="card">
-<h3>Analizador estadístico</h3>
-<label class="muted">Cantidad de rondas que deseas analizar</label>
+<h3>📈 Gráfica de resultados</h3>
 <select id="window" onchange="render()">
 <option value="10">Últimas 10 rondas</option>
 <option value="20">Últimas 20 rondas</option>
 <option value="50">Últimas 50 rondas</option>
 <option value="100">Últimas 100 rondas</option>
 </select>
-<div id="analysis" class="muted">Esperando resultados...</div>
+<canvas id="chart"></canvas>
 </div>
 
 <div class="card">
-<h3>Historial de resultados</h3>
-<div id="history" class="muted">Todavía no hay registros.</div>
+<h3>🔬 Distribución estadística</h3>
+<div id="distribution" class="muted">Esperando datos...</div>
+</div>
+
+<div class="card">
+<h3>🔔 Alertas estadísticas</h3>
+<div id="alerts" class="alert muted">Esperando suficientes registros.</div>
+</div>
+
+<div class="card">
+<h3>📚 Historial de rondas</h3>
+<div id="history">Sin registros.</div>
 <button class="secondary" onclick="undo()">DESHACER ÚLTIMO</button>
-<button class="secondary" onclick="exportData()">EXPORTAR HISTORIAL</button>
+<button class="secondary" onclick="exportData()">EXPORTAR CSV</button>
+<button class="secondary" onclick="exportBackup()">RESPALDAR DATOS</button>
+<label class="muted">Restaurar respaldo JSON</label>
+<input type="file" id="importFile" accept=".json,application/json">
+<button class="secondary" onclick="importBackup()">IMPORTAR RESPALDO</button>
 </div>
 
 <div class="card">
-<h3>⚠ Información del sistema</h3>
-<p class="muted">Las estadísticas describen resultados pasados. No predicen la siguiente ronda ni garantizan ganancias. Las alertas son observaciones estadísticas, no recomendaciones de apuesta.</p>
+<h3>🛡 Protección</h3>
+<p class="muted">Este sistema analiza registros históricos. No predice rondas futuras ni garantiza ganancias. No realiza apuestas automáticas.</p>
 </div>
+
+<footer>JETX SIGNAL BOT 2.0 · SISTEMA DE ANÁLISIS</footer>
 
 <script>
 let results=[];
 try{
-results=JSON.parse(localStorage.getItem("jetxResults")||"[]");
-if(!Array.isArray(results))results=[];
+const saved=JSON.parse(localStorage.getItem("jetxResults")||"[]");
+if(Array.isArray(saved)&&saved.every(x=>Number.isFinite(x)&&x>=1))results=saved;
 }catch(e){results=[];}
 
 function save(){
@@ -112,72 +116,120 @@ render();
 }
 
 function undo(){
-if(results.length===0)return;
+if(!results.length)return;
 results.pop();
 save();
 render();
 }
 
-function percent(n,total){
-return total?((n/total)*100).toFixed(1)+"%":"0%";
+function pct(n,t){
+return t?(n/t*100).toFixed(1)+"%":"0%";
 }
 
 function render(){
 const total=results.length;
-const recent=results.slice(-Number(document.getElementById("window").value));
-const count=recent.length;
-const average=count?recent.reduce((a,b)=>a+b,0)/count:0;
-const low=recent.filter(x=>x<1.5).length;
-const high=recent.filter(x=>x>=2).length;
-const veryHigh=recent.filter(x=>x>=5).length;
+const n=Number(document.getElementById("window").value);
+const data=results.slice(-n);
+const count=data.length;
+const avg=count?data.reduce((a,b)=>a+b,0)/count:0;
+const low=data.filter(x=>x<1.5).length;
+const mid=data.filter(x=>x>=1.5&&x<2).length;
+const high=data.filter(x=>x>=2&&x<5).length;
+const very=data.filter(x=>x>=5).length;
 
 document.getElementById("total").textContent=total;
-document.getElementById("average").textContent=count?average.toFixed(2)+"x":"—";
-document.getElementById("low").textContent=percent(low,count);
-document.getElementById("high").textContent=percent(high,count);
+document.getElementById("average").textContent=count?avg.toFixed(2)+"x":"—";
+document.getElementById("low").textContent=pct(low,count);
+document.getElementById("high").textContent=pct(high+very,count);
+
+document.getElementById("distribution").innerHTML=count?
+`<p>Menores de 1.50x: <b>${low}</b> (${pct(low,count)})</p>
+<p>De 1.50x a menos de 2x: <b>${mid}</b> (${pct(mid,count)})</p>
+<p>De 2x a menos de 5x: <b>${high}</b> (${pct(high,count)})</p>
+<p>De 5x en adelante: <b>${very}</b> (${pct(very,count)})</p>`:"Esperando datos...";
 
 let streak=0;
-for(let i=recent.length-1;i>=0;i--){
-if(recent[i]<1.5)streak++;
-else break;
-}
+for(let i=count-1;i>=0&&data[i]<1.5;i--)streak++;
 
-let html="";
-if(count===0){
-html="Registra resultados para comenzar.";
-}else{
-html=`
-<p>Rondas analizadas: <b>${count}</b></p>
-<p>Resultados menores de 1.50x: <b>${low}</b></p>
-<p>Resultados de 2.00x o más: <b>${high}</b></p>
-<p>Resultados de 5.00x o más: <b>${veryHigh}</b></p>
-<p>Racha actual inferior a 1.50x: <b>${streak}</b></p>
-<hr>
-<p class="warn">OBSERVACIÓN ESTADÍSTICA</p>
-<p>Se han registrado ${low} resultados inferiores a 1.50x en esta ventana.</p>
-<p class="muted">Este dato no permite anticipar el siguiente resultado.</p>`;
-}
-document.getElementById("analysis").innerHTML=html;
+document.getElementById("alerts").innerHTML=
+count<10?"Registra al menos 10 rondas para habilitar observaciones.":
+`<b class="badge">OBSERVACIÓN</b><p>${low} de ${count} resultados fueron inferiores a 1.50x.</p>
+<p>Racha histórica actual inferior a 1.50x: ${streak}.</p>
+<p>Estas observaciones no indican qué ocurrirá en la próxima ronda.</p>`;
 
 document.getElementById("history").innerHTML=results.length?
-results.slice(-20).reverse().map((v,i)=>
+results.slice(-30).reverse().map((v,i)=>
 `<div class="result"><span>Ronda ${total-i}</span><b>${v.toFixed(2)}x</b></div>`
-).join(""):"Todavía no hay registros.";
+).join(""):"Sin registros.";
+
+drawChart(data);
+}
+
+function drawChart(data){
+const canvas=document.getElementById("chart");
+const rect=canvas.getBoundingClientRect();
+const ratio=window.devicePixelRatio||1;
+canvas.width=rect.width*ratio;
+canvas.height=190*ratio;
+const ctx=canvas.getContext("2d");
+ctx.scale(ratio,ratio);
+const w=rect.width,h=190;
+ctx.clearRect(0,0,w,h);
+if(!data.length)return;
+const max=Math.max(5,...data);
+const step=w/data.length;
+ctx.strokeStyle="#42536b";
+ctx.fillStyle="#f5c518";
+ctx.font="10px Arial";
+for(let i=0;i<5;i++){
+let y=15+i*38;
+ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke();
+}
+data.forEach((v,i)=>{
+let bh=(v/max)*145;
+ctx.fillRect(i*step+2,h-25-bh,Math.max(2,step-4),bh);
+});
+ctx.fillStyle="#aab8cc";
+ctx.fillText("Multiplicadores · últimas rondas",5,185);
 }
 
 function exportData(){
 const csv="Ronda,Multiplicador\n"+
 results.map((v,i)=>(i+1)+","+v).join("\n");
-const blob=new Blob([csv],{type:"text/csv"});
+download(csv,"jetx-historial.csv","text/csv");
+}
+
+function exportBackup(){
+download(JSON.stringify(results,null,2),"jetx-respaldo.json","application/json");
+}
+
+function download(content,name,type){
+const blob=new Blob([content],{type});
 const url=URL.createObjectURL(blob);
 const a=document.createElement("a");
-a.href=url;
-a.download="jetx-historial.csv";
-a.click();
+a.href=url;a.download=name;a.click();
 URL.revokeObjectURL(url);
 }
 
+function importBackup(){
+const file=document.getElementById("importFile").files[0];
+if(!file){alert("Selecciona un archivo JSON.");return;}
+const reader=new FileReader();
+reader.onload=()=>{
+try{
+const data=JSON.parse(reader.result);
+if(!Array.isArray(data)||!data.every(x=>Number.isFinite(x)&&x>=1)){
+throw new Error("Datos inválidos");
+}
+if(!confirm("¿Reemplazar el historial actual por el respaldo?"))return;
+results=data;save();render();
+}catch(e){alert("El respaldo no es válido.");}
+};
+reader.readAsText(file);
+}
+
 render();
+window.addEventListener("resize",render);
 </script>
 </body>
 </html>
